@@ -46,4 +46,4 @@ ui_image_tag:
     - docker push $UI_IMAGE_NAME_TAGS:$CI_COMMIT_REF_NAME
 
   cache:
-    key: ${CI_PIPELINE_ID}
+  key: ${CI_PIPELINE_ID}
