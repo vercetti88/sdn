@@ -1,0 +1,50 @@
+image: gradle:7-jdk17
+
+variables:
+  DOCKER_DRIVER: overlay2
+  UI_IMAGE_NAME_MASTER: $CI_REGISTRY/$CI_PROJECT_PATH/master
+
+stages:
+  - build
+  - release
+
+build_app:
+  stage: build
+  script: gradle --build-cache assemble
+  artifacts:
+    paths:
+      - build/libs
+    expire_in: 1 hour
+  cache:
+    key: $CI_PROJECT_NAME
+    paths:
+      - .gradle/wrapper
+      - .gradle/caches
+
+ui_image_release_master:
+  stage: release
+  image: docker:19.03.5-dind
+  services:
+    - docker:19.03.5-dind
+  script:
+    - docker login -u gitlab-ci-token -p $CI_BUILD_TOKEN registry.gitlab.com
+    - docker build --pull -t $UI_IMAGE_NAME_MASTER:$CI_COMMIT_SHA .
+    - docker tag $UI_IMAGE_NAME_MASTER:$CI_COMMIT_SHA $UI_IMAGE_NAME_MASTER:latest
+    - docker push $UI_IMAGE_NAME_MASTER:$CI_COMMIT_SHA
+    - docker push $UI_IMAGE_NAME_MASTER:latest
+  only:
+    - master
+
+ui_image_tag:
+  variables:
+    GIT_STRATEGY: none
+  stage: release
+  only:
+    - tags
+  script:
+    - docker pull $UI_IMAGE_NAME_MASTER:$CI_COMMIT_SHA
+    - docker tag $UI_IMAGE_NAME_MASTER:$CI_COMMIT_SHA $UI_IMAGE_NAME_TAGS:$CI_COMMIT_REF_NAME
+    - docker push $UI_IMAGE_NAME_TAGS:$CI_COMMIT_REF_NAME
+
+  cache:
+    key: ${CI_PIPELINE_ID}
