@@ -1,4 +1,4 @@
-image: gradle:7-jdk17
+image: maven:3.6-jdk-17
 
 variables:
   DOCKER_DRIVER: overlay2
@@ -10,16 +10,15 @@ stages:
 
 build_app:
   stage: build
-  script: gradle --build-cache assemble
+  script: mvn clean package -Dmaven.test.skip=true
   artifacts:
     paths:
-      - build/libs
+      - target/*.jar
     expire_in: 1 hour
   cache:
     key: $CI_PROJECT_NAME
     paths:
-      - .gradle/wrapper
-      - .gradle/caches
+      - .m2/repository
 
 ui_image_release_master:
   stage: release
